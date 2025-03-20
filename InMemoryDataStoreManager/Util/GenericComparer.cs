@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 
 
-namespace MemoryDatabase.Util
+namespace InMemoryDataStoreManager.Util
 {
 
 
