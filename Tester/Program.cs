@@ -14,13 +14,9 @@ namespace Tester
     internal class Program
     {
 
-        internal static double Integrate(double valorAtual, double valorAnterior, double Q, double samble_interval)
+        internal static double Integrate(double current, double previous, double Q)
         {
-            if (samble_interval == 0) samble_interval = 1;
-            var sampling_rate = 1.0 / samble_interval;
-            var tau = Q * sampling_rate;
-
-            double _int = (valorAtual + (valorAnterior * tau)) / (tau + 1.0);
+            double _int = (current + (previous * Q)) / (Q + 1.0);
             return _int;
         }
 
