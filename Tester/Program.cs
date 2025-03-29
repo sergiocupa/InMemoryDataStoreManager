@@ -24,33 +24,52 @@ namespace Tester
         {
 			try
 			{
-                double tt = 0;
-
-                var clu = new ClusteredDictionary<int,MyObject>(50000);
-
-                int MAX = 1000000;
+                int MAX = 100000000;
                 Console.WriteLine("Inserindo              " + MAX);
 
+                var sw = Stopwatch.StartNew();
+                sw.Restart();
+
+                var list = new List<int>();
                 int ix = 0;
+                while (ix < MAX)
+                {
+                    ix++;
+                    list.Add(ix);
+                }
+
+                sw.Stop();
+                var t2 = sw.Elapsed.TotalMilliseconds;
+
+
+                var clu = new ClusteredDictionary<string>(5000);
+
+      
+                const string A = "Name_";
+
+                ix = 0;
                 while(ix < 10)
                 {
                     ix++;
 
-                    var obj = new MyObject()
-                    {
-                        ID = ix,
-                        Name = "Name_" + ix
-                    };
-                    clu.Insert(ix, obj);
+                    //var obj = new MyObject()
+                    //{
+                    //    ID = ix,
+                    //    Name = "Name_" + ix
+                    //};
+                    clu._Insert(ix, A);
                 }
 
-                var sw = Stopwatch.StartNew();
+               
+                sw.Restart();
+
+              
 
                 while (ix < MAX)
                 {
                     ix++;
-                    var obj = new MyObject() { ID = ix, Name = "Name_" + ix };
-                    clu.Insert(ix, obj);
+                    //var obj = new MyObject() { ID = ix, Name = "Name_" + ix };
+                    clu._Insert(ix, A);
                 }
 
                 sw.Stop();
@@ -59,31 +78,19 @@ namespace Tester
                 Console.WriteLine("Total cluster time     " + t1);
                 
 
-
-                sw.Restart();
-
-                var list = new List<MyObject>();
-                ix = 0;
-                while(ix < MAX)
-                {
-                    ix++;
-                    list.Add(new MyObject() { ID = ix, Name = "Name_" + ix });
-                }
-
-                sw.Stop();
-                var t2 = sw.Elapsed.TotalMilliseconds;
-                Console.WriteLine("Total list time        " + t2);
-                
-                int key = 900000;
+                int key = 90000000;
                 Console.WriteLine("Buscar chave           " + key);
 
                 sw.Restart();
 
-                var res = list.Where(d => d.ID == key).FirstOrDefault();
+                var res = list.Where(d => d == key).FirstOrDefault();
 
 
                 sw.Stop();
                 var t3 = sw.Elapsed.TotalMilliseconds;
+
+                Console.WriteLine("Total list time        " + t2);
+
                 Console.WriteLine("Total pesquisa lista   " + t3);
                 sw.Restart();
 
