@@ -42,7 +42,7 @@ namespace Tester
                 var t2 = sw.Elapsed.TotalMilliseconds;
 
 
-                var clu = new ClusteredDictionary<string>(5000);
+                var clu = new IntegerDataIndex<string>(5000);
 
       
                 const string A = "Name_";
@@ -57,7 +57,7 @@ namespace Tester
                     //    ID = ix,
                     //    Name = "Name_" + ix
                     //};
-                    clu._Insert(ix, A);
+                    clu.Insert(ix, A);
                 }
 
                
@@ -69,7 +69,7 @@ namespace Tester
                 {
                     ix++;
                     //var obj = new MyObject() { ID = ix, Name = "Name_" + ix };
-                    clu._Insert(ix, A);
+                    clu.Insert(ix, A);
                 }
 
                 sw.Stop();
