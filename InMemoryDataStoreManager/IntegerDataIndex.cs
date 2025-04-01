@@ -11,7 +11,8 @@ namespace InMemoryDataStoreManager
 
             if (key > clu.Max)
             {
-                clu.Instances[clu.InstancesLength] = new IntIndexPoint<Tdata>() { Key = key };
+                clu.Max = key;
+                clu.Instances[clu.InstancesLength] = new IntIndexPoint<Tdata>() { Key = key, Value = instance };
                 clu.InstancesLength++;
             }
             else
@@ -24,7 +25,8 @@ namespace InMemoryDataStoreManager
                     {
                         clu.Instances[i] = clu.Instances[i - 1];
                     }
-                    clu.Instances[left] = new IntIndexPoint<Tdata>() { Key = key };
+                    clu.Instances[left] = new IntIndexPoint<Tdata>() { Key = key, Value = instance };
+                    clu.Max = clu.Instances[clu.InstancesLength].Key;
                     clu.InstancesLength++;
                 }
                 else
