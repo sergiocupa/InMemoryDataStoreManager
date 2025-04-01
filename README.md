@@ -1,3 +1,2 @@
-In-memory data storage for general use.
-Current initial work consists of tests and studies involving column indexing techniques.
-Project is still in its early stages.
+Data storage in memory for general use. 
+Currently, I am in the implementation and testing phase of IntegerDataIndex, which serves as a proof of concept for data indexing. For now, I am using standard C# programming. However, after validating the concept, fixed memory allocation will be used to improve performance.
