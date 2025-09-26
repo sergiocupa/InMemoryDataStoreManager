@@ -9,13 +9,13 @@ namespace InMemoryDataStoreManager
         {
             var clu = CurrentCluster(key, Cluster);
 
-            if (key > clu.Max)
+            if (key > clu.Max)// Se já é maior que ultimo, insere no final
             {
                 clu.Max = key;
                 clu.Instances[clu.InstancesLength] = new IntIndexPoint<Tdata>() { Key = key, Value = instance };
                 clu.InstancesLength++;
             }
-            else
+            else// Verifica se existe, se não existir insere na posição correta
             {
                 int left = 0;
                 int found = binary_search(clu.Instances, ref left, clu.InstancesLength - 1, key);
@@ -166,10 +166,13 @@ namespace InMemoryDataStoreManager
 
     }
 
+
+    
+
     public class ClusterRange<Tdata>
     {
-        public int First;
-        public int Max;
+        public int  First;
+        public int  Max;
         public bool Completed;
         public bool IsLast;
         public int ChildrenPosition;
