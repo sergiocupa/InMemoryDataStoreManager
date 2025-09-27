@@ -1,4 +1,6 @@
 ﻿using InMemoryDataStoreManager;
+using InMemoryDataStoreManager.Engine;
+using InMemoryDataStoreManager.Indexer;
 using System.Diagnostics;
 
 
@@ -13,10 +15,54 @@ namespace Tester
             int nInserts = 1000000; // para 1 milhão, aumentar n
             Console.WriteLine("Rodando testes com " + nInserts + " registros…\r\n");
 
-            // var skipResult   = TestStructure.Run(new DataIndexer<int>(), nInserts);
-            //var skipUnsafe   = TestStructure.Run(new SkipListUnsafe(), nInserts);
+
+            MemoryContext.Prepare<Movimento>((a) =>
+            {
+                a.AddIndex(a => a.Numero);
+            });
+
+
+            var context = MemoryContext.Get<Movimento>();
+
+            var query = context.AsQueryable();
+
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 1 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 2 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 3 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 4 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 5 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 6 });
+            context.Save(new Movimento() { CodigoFilial = "123", Serie = "200", Numero = 7 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 8 });
+            context.Save(new Movimento() { CodigoFilial = "101", Serie = "200", Numero = 8 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 9 });
+            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 10 });
+
+
+            var aa = query.Where(e => e.Numero == 8 && e.CodigoFilial == "101");
+            var bb = aa.ToArray();
+
+
+
+            var index = new SkipList<int>();
+            index.Insert(2);
+            index.Insert(3);
+            index.Insert(6);
+            index.Insert(9);
+            index.Insert(10);
+            index.Insert(13);
+            index.Insert(20);
+
+            var ss = default(int?);
+
+
+            var exist = index.SearchRange(3, null, includeMin: false);
+            var cnt   = exist.ToList();
+
+
+
             var skipResult   = TestStructure.Run(new DataIndexer<int>(), nInserts);
-            var skipResult2  = TestStructure.Run(new DataIndexer2<int>(), nInserts);
+            var skipResult2  = TestStructure.Run(new SkipList<int>(), nInserts);
             var PlusTree = TestStructure.Run(new BPlusTree<int,int>(), nInserts);
             var simpleResult = TestStructure.Run(new SimpleList<int>(), nInserts);
 
@@ -113,6 +159,14 @@ namespace Tester
 
     }
 
+
+    public class Movimento
+    {
+        public string  CodigoFilial { get; set; }
+        public string Serie { get; set; }
+        public int Numero { get; set; }
+        public string Nome { get; set; }
+    }
 
     internal class TestResult
     {
