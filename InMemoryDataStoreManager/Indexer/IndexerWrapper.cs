@@ -8,7 +8,6 @@ namespace InMemoryDataStoreManager.Indexer
     public class IndexerWrapper<T>
     {
 
-
         public void Insert(T instance)
         {
             foreach(var item in Indexers.Values)
@@ -25,14 +24,15 @@ namespace InMemoryDataStoreManager.Indexer
         }
 
 
-        public IIndexer<Tkey>? Get<Tkey>(PropertyInfo property) => Indexers.TryGetValue(property, out var idx) ? (IIndexer<Tkey>)idx : null;
+        public IIndexer<Tkey,T>? Get<Tkey>(PropertyInfo property) => Indexers.TryGetValue(property, out var idx) ? (IIndexer<Tkey,T>)idx : null;
+        public IIndexer? Get(PropertyInfo property) => Indexers.TryGetValue(property, out var idx) ? (IIndexer)idx : null;
 
 
-        public void Create<TKey>(PropertyInfo property) where TKey : struct, IComparable<TKey>
+        public void Create<TKey>(PropertyInfo property, bool is_unique) where TKey : struct, IComparable<TKey>
         {
             if (Indexers.ContainsKey(property)) return;
 
-            var idx = new SkipList<TKey>(property);
+            var idx = new SkipList<TKey,T>(property,is_unique);
 
             Indexers[property] = idx;
         }

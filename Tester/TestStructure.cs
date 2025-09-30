@@ -1,5 +1,4 @@
-﻿using InMemoryDataStoreManager;
-using InMemoryDataStoreManager.Engine;
+﻿using InMemoryDataStoreManager.Engine;
 using InMemoryDataStoreManager.Indexer;
 using System.Diagnostics;
 
@@ -16,57 +15,72 @@ namespace Tester
             Console.WriteLine("Rodando testes com " + nInserts + " registros…\r\n");
 
 
-            MemoryContext.Prepare<Movimento>((a) =>
+            MemoryDataSource.Prepare<Movimento>((a) =>
             {
-                a.AddIndex(a => a.Numero);
+                a.AddIndex(a => a.Numero,false);
+            });
+            MemoryDataSource.Prepare<Transito>((a) =>
+            {
+                a.AddIndex(a => a.ID, true);
             });
 
 
-            var context = MemoryContext.Get<Movimento>();
+            var movs = MemoryDataSource.Get<Movimento>();
+            var tran = MemoryDataSource.Get<Transito>();
+            var movq = movs.AsQueryable();
+            var tra  = tran.AsQueryable();
 
-            var query = context.AsQueryable();
+            tran.Save(new Transito() { ID = 2, Codigo = "002" });
+            tran.Save(new Transito() { ID = 3, Codigo = "003" });
+            tran.Save(new Transito() { ID = 4, Codigo = "004" });
+            tran.Save(new Transito() { ID = 5, Codigo = "005" });
 
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 1 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 2 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 3 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 4 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 5 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 6 });
-            context.Save(new Movimento() { CodigoFilial = "123", Serie = "200", Numero = 7 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 8 });
-            context.Save(new Movimento() { CodigoFilial = "101", Serie = "200", Numero = 8 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 9 });
-            context.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 10 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 1 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 2 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 3 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 4 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 5 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 6 });
+            movs.Save(new Movimento() { CodigoFilial = "123", Serie = "200", Numero = 7 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 8 });
+            movs.Save(new Movimento() { CodigoFilial = "101", Serie = "200", Numero = 8 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 9 });
+            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 10 });
 
 
-            var aa = query.Where(e => e.Numero == 8 && e.CodigoFilial == "101");
+            var ff = from g in movq
+                     join a in tra on g.Numero equals a.ID
+                     select new { a, g };
+
+            var hhh = ff.ToList();
+
+
+            // Nao usa o Index, se campo com index misturado com campo sem index.
+            var aa = movq.Where(e => e.Numero >= 8 && e.CodigoFilial == "100").OrderBy(o => o.Numero).Select(f => new { f.CodigoFilial, f.Nome });
             var bb = aa.ToArray();
 
 
 
-            var index = new SkipList<int>();
-            index.Insert(2);
-            index.Insert(3);
-            index.Insert(6);
-            index.Insert(9);
-            index.Insert(10);
-            index.Insert(13);
-            index.Insert(20);
+            var index = new SkipList<int, Movimento>();
+            index.Insert(2,new Movimento());
+            index.Insert(3, new Movimento());
+            index.Insert(6, new Movimento());
+            index.Insert(9, new Movimento());
+            index.Insert(10, new Movimento());
+            index.Insert(13, new Movimento());
+            index.Insert(20, new Movimento());
 
             var ss = default(int?);
 
 
-            var exist = index.SearchRange(3, null, includeMin: false);
-            var cnt   = exist.ToList();
+            //var exist = index.SearchRange(3, null, includeMin: false);
+            //var cnt   = exist.ToList();
 
-
-
-            var skipResult   = TestStructure.Run(new DataIndexer<int>(), nInserts);
-            var skipResult2  = TestStructure.Run(new SkipList<int>(), nInserts);
-            var PlusTree = TestStructure.Run(new BPlusTree<int,int>(), nInserts);
+            var skipResult2  = TestStructure.Run(new SkipList<int,Movimento>(), nInserts);
+            var PlusTree     = TestStructure.Run(new BPlusTree<int,int>(), nInserts);
             var simpleResult = TestStructure.Run(new SimpleList<int>(), nInserts);
 
-            var results = new List<TestResult> { skipResult, skipResult2, PlusTree, simpleResult };
+            var results = new List<TestResult> { skipResult2, PlusTree, simpleResult };
 
             var csv = "Structure\tInsert Linear\tInsert Random\tSearch Linear\tSearch Random\tDelete Linear\tDelete Random\r\n";
             foreach (var r in results)
@@ -165,6 +179,13 @@ namespace Tester
         public string  CodigoFilial { get; set; }
         public string Serie { get; set; }
         public int Numero { get; set; }
+        public string Nome { get; set; }
+    }
+
+    public class Transito
+    {
+        public string Codigo { get; set; }
+        public int ID { get; set; }
         public string Nome { get; set; }
     }
 

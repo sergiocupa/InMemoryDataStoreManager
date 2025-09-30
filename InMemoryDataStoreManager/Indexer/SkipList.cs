@@ -3,32 +3,52 @@ using System.Reflection;
 
 namespace InMemoryDataStoreManager.Indexer
 {
-    public class SkipList<Tkey> : IIndexer<Tkey>, IIndexer where Tkey : struct, IComparable<Tkey>
+
+    public class SkipList<Tkey,Tobj> : IIndexer<Tkey, Tobj>, IIndexer where Tkey : struct, IComparable<Tkey>
     {
 
-        public void Insert(object value)
+        public void Insert(object instance)
         {
-            var vp = Property.GetValue(value);
-            Insert((Tkey)vp);
+            var vp = Property.GetValue(instance);
+            Insert((Tkey)vp,(Tobj)instance);
         }
 
-        public void Insert(Tkey value)
+        public void Insert(Tkey key, Tobj instance)
         {
-            // Otimização simples: verificar se pode inserir no final (inserção sequencial)
-            if (tail == null || value.CompareTo(tail.Value) > 0)
+            var node = Find(key);
+            if(node != null)
             {
-                InsertAtEnd(value);
+                if (IsUnique)
+                {
+                    throw new InvalidOperationException($"Chave duplicada: {key}");
+                }
+                node.Objects.Add(instance);
+                return;
+            }
+
+            // Otimização simples: verificar se pode inserir no final (inserção sequencial)
+            if (tail == null || key.CompareTo(tail.Key) > 0)
+            {
+                InsertAtEnd(key, instance);
                 return;
             }
 
             // Inserção normal para casos não-sequenciais
-            InsertNormal(value);
+            InsertNormal(key, instance);
         }
 
-        private void InsertAtEnd(Tkey value)
+        private void InsertAtEnd(Tkey key, Tobj instance)
         {
+            //if(tail != null && tail.Key.CompareTo(key) == 0)
+            //{
+            //    if (IsUnique)
+            //    {
+            //        throw new InvalidOperationException($"Chave duplicada no final: {key}");
+            //    }
+            //}
+
             int lvl = RandomLevel();
-            var newNode = new IndexerNode<Tkey>(lvl, value);
+            var newNode = new IndexerNode<Tkey, Tobj>(lvl, key, instance);
 
             if (tail == null)
             {
@@ -71,15 +91,15 @@ namespace InMemoryDataStoreManager.Indexer
             tail = newNode;
         }
 
-        private void InsertNormal(Tkey value)
+        private void InsertNormal(Tkey key, Tobj instance)
         {
-            var update = new IndexerNode<Tkey>[MAX_LEVEL + 1];
+            var update = new IndexerNode<Tkey, Tobj>[MAX_LEVEL + 1];
             var x = head;
 
             // Busca padrão da skip list
             for (int i = level; i >= 0; i--)
             {
-                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Value.CompareTo(value) < 0)
+                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Key.CompareTo(key) < 0)
                     x = x.Forward[i];
                 update[i] = x;
             }
@@ -87,7 +107,7 @@ namespace InMemoryDataStoreManager.Indexer
             x = x.Forward[0];
 
             // Se não existe, insere
-            if (x == null || !x.Value.Equals(value))
+            if (x == null || !x.Key.Equals(key))
             {
                 int lvl = RandomLevel();
                 if (lvl > level)
@@ -97,7 +117,7 @@ namespace InMemoryDataStoreManager.Indexer
                     level = lvl;
                 }
 
-                var newNode = new IndexerNode<Tkey>(lvl, value);
+                var newNode = new IndexerNode<Tkey, Tobj>(lvl, key, instance);
                 for (int i = 0; i <= lvl; i++)
                 {
                     if (i < update[i].Forward.Length)
@@ -111,20 +131,27 @@ namespace InMemoryDataStoreManager.Indexer
                 if (newNode.Forward[0] == null)
                     tail = newNode;
             }
+            //else
+            //{
+            //    if (IsUnique)
+            //    {
+            //        throw new InvalidOperationException($"Chave duplicada no final: {key}");
+            //    } 
+            //}
         }
 
-        // Método específico para inserção em lote sequencial
-        public void InsertRange(IEnumerable<Tkey> values)
-        {
-            var sortedValues = values.OrderBy(x => x);
-            foreach (var value in sortedValues)
-            {
-                if (tail == null || value.CompareTo(tail.Value) > 0)
-                    InsertAtEnd(value);
-                else
-                    InsertNormal(value);
-            }
-        }
+        //// Método específico para inserção em lote sequencial
+        //public void InsertRange(IEnumerable<Tuple<Tkey,Tobj>> values)
+        //{
+        //    var sortedValues = values.OrderBy(x => x);
+        //    foreach (var value in sortedValues)
+        //    {
+        //        if (tail == null || value.Key.CompareTo(tail.Key) > 0)
+        //            InsertAtEnd(value);
+        //        else
+        //            InsertNormal(value);
+        //    }
+        //}
 
 
         public void Delete(object value)
@@ -135,18 +162,18 @@ namespace InMemoryDataStoreManager.Indexer
        
         public void Delete(Tkey value)
         {
-            var update = new IndexerNode<Tkey>[MAX_LEVEL + 1];
+            var update = new IndexerNode<Tkey,Tobj>[MAX_LEVEL + 1];
             var x = head;
 
             for (int i = level; i >= 0; i--)
             {
-                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Value.CompareTo(value) < 0)
+                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Key.CompareTo(value) < 0)
                     x = x.Forward[i];
                 update[i] = x;
             }
 
             x = x.Forward[0];
-            if (x != null && x.Value.CompareTo(value) == 0)
+            if (x != null && x.Key.CompareTo(value) == 0)
             {
                 for (int i = 0; i <= level; i++)
                 {
@@ -182,26 +209,40 @@ namespace InMemoryDataStoreManager.Indexer
             var x = head;
             for (int i = level; i >= 0; i--)
             {
-                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Value.CompareTo(value) < 0)
+                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Key.CompareTo(value) < 0)
                     x = x.Forward[i];
             }
             x = x.Forward[0];
-            return x != null && x.Value.CompareTo(value) == 0;
+            return x != null && x.Key.CompareTo(value) == 0;
+        }
+
+        public IndexerNode<Tkey,Tobj> Find(Tkey value)
+        {
+            var x = head;
+            for (int i = level; i >= 0; i--)
+            {
+                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Key.CompareTo(value) < 0)
+                    x = x.Forward[i];
+            }
+            x = x.Forward[0];
+            return (x != null && x.Key.CompareTo(value) == 0) ? x : null;
         }
 
 
         public IEnumerable SearchRange(object minValue, object maxValue, bool includeMin = true, bool includeMax = true)
         {
-            return SearchRange((Tkey)minValue, (Tkey)maxValue, includeMin, includeMax);
+            return SearchRange((Tkey?)minValue, (Tkey?)maxValue, includeMin, includeMax);
         }
 
-        public IEnumerable<Tkey> SearchRange(Tkey minValue, Tkey maxValue, bool includeMin = true, bool includeMax = true)
+        public IEnumerable<Tobj> SearchRange(Tkey minValue, Tkey maxValue, bool includeMin = true, bool includeMax = true)
         {
             return SearchRange(minValue, maxValue, includeMin, includeMax);
         }
 
-        public IEnumerable<Tkey> SearchRange(Tkey? minValue, Tkey? maxValue, bool includeMin = true, bool includeMax = true) 
+        public IEnumerable<Tobj> SearchRange(Tkey? minValue, Tkey? maxValue, bool includeMin = true, bool includeMax = true) 
         {
+            var result = new List<Tobj>();
+
             // Começa pelo head
             var x = head;
 
@@ -209,8 +250,7 @@ namespace InMemoryDataStoreManager.Indexer
             for (int i = level; i >= 0; i--)
             {
                 // se minValue for null, pega desde o início
-                while (i < x.Forward.Length && x.Forward[i] != null &&
-                      (minValue != null && x.Forward[i].Value.CompareTo(minValue.Value) < 0))
+                while (i < x.Forward.Length && x.Forward[i] != null && (minValue != null && x.Forward[i].Key.CompareTo(minValue.Value) < 0))
                 {
                     x = x.Forward[i];
                 }
@@ -222,24 +262,19 @@ namespace InMemoryDataStoreManager.Indexer
             // 3. Iterar enquanto não ultrapassar o maxValue
             while (x != null)
             {
-                bool afterMin = minValue == null ||
-                    (includeMin ? x.Value.CompareTo(minValue.Value) >= 0
-                                : x.Value.CompareTo(minValue.Value) > 0);
-
-                bool beforeMax = maxValue == null ||
-                    (includeMax ? x.Value.CompareTo(maxValue.Value) <= 0
-                                : x.Value.CompareTo(maxValue.Value) < 0);
+                bool afterMin  = minValue == null || (includeMin ? x.Key.CompareTo(minValue.Value) >= 0 : x.Key.CompareTo(minValue.Value) > 0);
+                bool beforeMax = maxValue == null || (includeMax ? x.Key.CompareTo(maxValue.Value) <= 0 : x.Key.CompareTo(maxValue.Value) < 0);
 
                 if (afterMin && beforeMax)
-                    yield return x.Value;
+                {
+                    result.AddRange(x.Objects);
+                }
 
-                if (maxValue != null &&
-                    (includeMax ? x.Value.CompareTo(maxValue.Value) > 0
-                                : x.Value.CompareTo(maxValue.Value) >= 0))
-                    break;
+                if (maxValue != null && (includeMax ? x.Key.CompareTo(maxValue.Value) > 0 : x.Key.CompareTo(maxValue.Value) >= 0)) break;
 
                 x = x.Forward[0];
             }
+            return result;
         }
 
 
@@ -255,22 +290,38 @@ namespace InMemoryDataStoreManager.Indexer
         const int MAX_LEVEL = 16;
 
         private PropertyInfo Property;
-        private readonly IndexerNode<Tkey> head = new IndexerNode<Tkey>(MAX_LEVEL, default!);
-        private IndexerNode<Tkey>? tail = null;
+        private readonly IndexerNode<Tkey, Tobj> head = new IndexerNode<Tkey, Tobj>(MAX_LEVEL, default!, default!);
+        private IndexerNode<Tkey, Tobj>? tail = null;
         private int level = 0;
         private readonly Random rand = new Random();
-        private IndexerNode<Tkey>[]? tailLevels = new IndexerNode<Tkey>[MAX_LEVEL + 1];
+        private IndexerNode<Tkey, Tobj>[]? tailLevels = new IndexerNode<Tkey, Tobj>[MAX_LEVEL + 1];
+        private bool IsUnique;
 
 
         public SkipList()
         {
         }
-        public SkipList(PropertyInfo property)
+        public SkipList(PropertyInfo property, bool is_unique)
         {
             Property = property;
+            IsUnique = is_unique;
         }
     }
 
 
+    public class IndexerNode<Tkey, Tobj> where Tkey : IComparable<Tkey>
+    {
+        public   Tkey                      Key;
+        public   List<Tobj>                Objects;
+        internal IndexerNode<Tkey, Tobj>[] Forward;
+
+        internal IndexerNode(int level, Tkey key, Tobj instance)
+        {
+            Forward = new IndexerNode<Tkey, Tobj>[level + 1];
+            Key = key;
+            Objects = new List<Tobj>();
+            Objects.Add(instance);
+        }
+    }
 
 }
