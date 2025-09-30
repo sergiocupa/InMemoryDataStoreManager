@@ -1,4 +1,4 @@
-In-memory data storage for general-purpose use. The project is still in its early stages.
+In-memory data storage for general-purpose use.
 
 I tested two indexers: BPlusTree and SkipList. I found that SkipList performed slightly better, so I decided to use it. Moreover, with SkipList, I don’t need to worry about index recycling.
 
