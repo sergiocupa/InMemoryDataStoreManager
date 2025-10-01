@@ -12,11 +12,8 @@
 //  
 //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
 
-
-
 using System.Collections;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace InMemoryDataStoreManager.Engine
 {
@@ -30,6 +27,15 @@ namespace InMemoryDataStoreManager.Engine
                 FilterCondition cond => ApplyCondition(artifact, cond),
                 FilterGroup grp => ApplyGroup(artifact, grp),
                 _ => artifact.Items
+            };
+        }
+        public static IEnumerable<T> ApplyFilters<T>(IEnumerable<T> source, FilterNode node) where T : class
+        {
+            return node switch
+            {
+                FilterCondition cond => source.Where(x => Matches(x, cond)),
+                FilterGroup grp => ApplyGroup(source, grp),
+                _ => source
             };
         }
 
@@ -46,12 +52,25 @@ namespace InMemoryDataStoreManager.Engine
             }
         }
 
+        private static IEnumerable<T> ApplyGroup<T>(IEnumerable<T> source, FilterGroup group) where T : class
+        {
+            var sets = group.Children.Select(child => ApplyFilters(source, child));
+            return group.Operator == LogicalOp.And
+                ? sets.Aggregate((a, b) => a.Intersect(b))
+                : sets.Aggregate((a, b) => a.Union(b));
+        }
+
         private static IEnumerable<T> ApplyCondition<T>(ObjecProvider<T> artifact, FilterCondition cond) where T : class
         {
             return artifact.Items.Where(x => Matches(x, cond));
         }
 
-        private static bool Matches<T>(T item, FilterCondition cond)
+        private static IEnumerable<T> ApplyCondition<T>(IEnumerable<T> source, FilterCondition cond) where T : class
+        {
+            return source.Where(x => Matches(x, cond));
+        }
+
+        internal static bool Matches<T>(T item, FilterCondition cond)
         {
             var val = cond.Property.GetValue(item);
             // Handle nulls

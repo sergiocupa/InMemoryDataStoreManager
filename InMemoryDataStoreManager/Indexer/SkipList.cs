@@ -30,7 +30,7 @@ namespace InMemoryDataStoreManager.Indexer
 
         public void Insert(Tkey key, Tobj instance)
         {
-            var node = Find(key);
+            var node = FindNode(key);
             if(node != null)
             {
                 if (IsUnique)
@@ -231,7 +231,24 @@ namespace InMemoryDataStoreManager.Indexer
             return x != null && x.Key.CompareTo(value) == 0;
         }
 
-        public IndexerNode<Tkey,Tobj> Find(Tkey value)
+        public IEnumerable Find(object value)
+        {
+            return Find((Tkey)value);
+        }
+
+        public List<Tobj> Find(Tkey value)
+        {
+            var x = head;
+            for (int i = level; i >= 0; i--)
+            {
+                while (i < x.Forward.Length && x.Forward[i] != null && x.Forward[i].Key.CompareTo(value) < 0)
+                    x = x.Forward[i];
+            }
+            x = x.Forward[0];
+            return (x != null && x.Key.CompareTo(value) == 0) ? x.Objects : null;
+        }
+
+        private IndexerNode<Tkey, Tobj> FindNode(Tkey value)
         {
             var x = head;
             for (int i = level; i >= 0; i--)
@@ -293,12 +310,91 @@ namespace InMemoryDataStoreManager.Indexer
         }
 
 
+        public List<JoinResult<Tkey, Tobj, TobjOther>> _SearchJoin<TobjOther>(SkipList<Tkey, TobjOther> other) where TobjOther : class
+        {
+            var results = new List<JoinResult<Tkey, Tobj, TobjOther>>();
+
+            var leftNode  = this.head.Forward[0];
+            var rightNode = other.head.Forward[0];
+
+            while (leftNode != null && rightNode != null)
+            {
+                int cmp = leftNode.Key.CompareTo(rightNode.Key);
+
+                if (cmp == 0)
+                {
+                    results.Add(new JoinResult<Tkey, Tobj, TobjOther>(leftNode.Key, new List<Tobj>(leftNode.Objects), new List<TobjOther>(rightNode.Objects)));
+
+                    leftNode  = leftNode.Forward[0];
+                    rightNode = rightNode.Forward[0];
+                }
+                else if (cmp < 0)
+                {
+                    leftNode = leftNode.Forward[0];
+                }
+                else
+                {
+                    rightNode = rightNode.Forward[0];
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Faz um JOIN entre este índice e outro índice usando a chave (Tkey).
+        /// Retorna diretamente os pares (a,b) que possuem a mesma chave.
+        /// </summary>
+        public List<(Tobj Left, TOther Right)> SearchJoin<TOther>(SkipList<Tkey, TOther> other) where TOther : class
+        {
+            var results = new List<(Tobj, TOther)>();
+
+            var leftNode = this.head.Forward[0];
+            var rightNode = other.head.Forward[0];
+
+            while (leftNode != null && rightNode != null)
+            {
+                int cmp = leftNode.Key.CompareTo(rightNode.Key);
+
+                if (cmp == 0)
+                {
+                    // faz o produto cartesiano dos objetos dessa chave
+                    foreach (var l in leftNode.Objects)
+                    {
+                        foreach (var r in rightNode.Objects)
+                        {
+                            results.Add((l, r));
+                        }
+                    }
+
+                    leftNode  = leftNode.Forward[0];
+                    rightNode = rightNode.Forward[0];
+                }
+                else if (cmp < 0)
+                {
+                    leftNode = leftNode.Forward[0];
+                }
+                else
+                {
+                    rightNode = rightNode.Forward[0];
+                }
+            }
+
+            return results;
+        }
+
+
         private int RandomLevel()
         {
             int lvl = 0;
             while (rand.NextDouble() < P && lvl < MAX_LEVEL)
                 lvl++;
             return lvl;
+        }
+
+        public PropertyInfo GetProperty()
+        {
+            return Property;
         }
 
         const double P = 0.5;
@@ -336,6 +432,20 @@ namespace InMemoryDataStoreManager.Indexer
             Key = key;
             Objects = new List<Tobj>();
             Objects.Add(instance);
+        }
+    }
+
+    public class JoinResult<Tkey, TobjLeft, TobjRight> where Tkey : struct, IComparable<Tkey>
+    {
+        public Tkey Key { get; }
+        public List<TobjLeft> Left { get; }
+        public List<TobjRight> Right { get; }
+
+        public JoinResult(Tkey key, List<TobjLeft> left, List<TobjRight> right)
+        {
+            Key = key;
+            Left = left;
+            Right = right;
         }
     }
 

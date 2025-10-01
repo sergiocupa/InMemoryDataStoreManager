@@ -34,6 +34,7 @@ namespace Tester
             MemoryDataSource.Prepare<Movimento>((a) =>
             {
                 a.AddIndex(a => a.Numero,false);
+                a.AddIndex(a => a.ID, false);
             });
             MemoryDataSource.Prepare<Transito>((a) =>
             {
@@ -51,17 +52,17 @@ namespace Tester
             tran.Save(new Transito() { ID = 4, Codigo = "004" });
             tran.Save(new Transito() { ID = 5, Codigo = "005" });
 
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 1 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 2 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 3 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 4 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 5 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 6 });
-            movs.Save(new Movimento() { CodigoFilial = "123", Serie = "200", Numero = 7 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 8 });
-            movs.Save(new Movimento() { CodigoFilial = "101", Serie = "200", Numero = 8 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 9 });
-            movs.Save(new Movimento() { CodigoFilial = "100", Serie = "200", Numero = 10 });
+            movs.Save(new Movimento() { ID = 1,  CodigoFilial = "100", Serie = "200", Numero = 1 });
+            movs.Save(new Movimento() { ID = 2,  CodigoFilial = "100", Serie = "200", Numero = 2 });
+            movs.Save(new Movimento() { ID = 3,  CodigoFilial = "100", Serie = "200", Numero = 3 });
+            movs.Save(new Movimento() { ID = 4,  CodigoFilial = "100", Serie = "200", Numero = 4 });
+            movs.Save(new Movimento() { ID = 5,  CodigoFilial = "100", Serie = "200", Numero = 5 });
+            movs.Save(new Movimento() { ID = 6,  CodigoFilial = "100", Serie = "200", Numero = 6 });
+            movs.Save(new Movimento() { ID = 7,  CodigoFilial = "123", Serie = "200", Numero = 7 });
+            movs.Save(new Movimento() { ID = 8,  CodigoFilial = "100", Serie = "200", Numero = 8 });
+            movs.Save(new Movimento() { ID = 9,  CodigoFilial = "101", Serie = "200", Numero = 8 });
+            movs.Save(new Movimento() { ID = 10, CodigoFilial = "100", Serie = "200", Numero = 9 });
+            movs.Save(new Movimento() { ID = 11, CodigoFilial = "100", Serie = "200", Numero = 10 });
 
 
             var ff = from g in movq
@@ -72,45 +73,44 @@ namespace Tester
 
 
             // Nao usa o Index, se campo com index misturado com campo sem index.
-            var aa = movq.Where(e => e.Numero >= 8 && e.CodigoFilial == "100").OrderBy(o => o.Numero).Select(f => new { f.CodigoFilial, f.Nome });
-            var bb = aa.ToArray();
+            var bb = movq.Where(e => e.Numero >= 8 && e.ID == 8 && e.CodigoFilial == "100").OrderBy(o => o.Numero).Select(f => new { f.CodigoFilial, f.Nome, f.ID }).ToArray();
 
 
 
             var index = new SkipList<int, Movimento>();
-            index.Insert(2,new Movimento());
-            index.Insert(3, new Movimento());
-            index.Insert(6, new Movimento());
-            index.Insert(9, new Movimento());
-            index.Insert(10, new Movimento());
-            index.Insert(13, new Movimento());
-            index.Insert(20, new Movimento());
+            //index.Insert(2,new Movimento());
+            //index.Insert(3, new Movimento());
+            //index.Insert(6, new Movimento());
+            //index.Insert(9, new Movimento());
+            //index.Insert(10, new Movimento());
+            //index.Insert(13, new Movimento());
+            //index.Insert(20, new Movimento());
 
-            var ss = default(int?);
+            //var ss = default(int?);
 
 
-            //var exist = index.SearchRange(3, null, includeMin: false);
-            //var cnt   = exist.ToList();
+            ////var exist = index.SearchRange(3, null, includeMin: false);
+            ////var cnt   = exist.ToList();
 
-            var skipResult2  = TestStructure.Run(new SkipList<int,Movimento>(), nInserts);
-            var PlusTree     = TestStructure.Run(new BPlusTree<int,int>(), nInserts);
-            var simpleResult = TestStructure.Run(new SimpleList<int>(), nInserts);
+            //var skipResult2  = TestStructure.Run(new SkipList<int,Movimento>(), nInserts);
+            //var PlusTree     = TestStructure.Run(new BPlusTree<int,int>(), nInserts);
+            //var simpleResult = TestStructure.Run(new SimpleList<int>(), nInserts);
 
-            var results = new List<TestResult> { skipResult2, PlusTree, simpleResult };
+            //var results = new List<TestResult> { skipResult2, PlusTree, simpleResult };
 
-            var csv = "Structure\tInsert Linear\tInsert Random\tSearch Linear\tSearch Random\tDelete Linear\tDelete Random\r\n";
-            foreach (var r in results)
-            {
-                csv += $"{r.Structure}\t{r.InsertLinear.ToString("0.000000")}\t{r.InsertRandom.ToString("0.000000")}\t{r.SearchLinear.ToString("0.000000")}\t{r.SearchRandom.ToString("0.000000")}\t{r.DeleteLinear.ToString("0.000000")}\t{r.DeleteRandom.ToString("0.000000")}\r\n";
-            }
+            //var csv = "Structure\tInsert Linear\tInsert Random\tSearch Linear\tSearch Random\tDelete Linear\tDelete Random\r\n";
+            //foreach (var r in results)
+            //{
+            //    csv += $"{r.Structure}\t{r.InsertLinear.ToString("0.000000")}\t{r.InsertRandom.ToString("0.000000")}\t{r.SearchLinear.ToString("0.000000")}\t{r.SearchRandom.ToString("0.000000")}\t{r.DeleteLinear.ToString("0.000000")}\t{r.DeleteRandom.ToString("0.000000")}\r\n";
+            //}
 
-            Console.Write(csv);
+            //Console.Write(csv);
 
-            string path = Path.Combine(Directory.GetCurrentDirectory(), "results.csv");
-            using (var sw = new StreamWriter(path))
-            {
-                sw.Write(csv);
-            }
+            //string path = Path.Combine(Directory.GetCurrentDirectory(), "results.csv");
+            //using (var sw = new StreamWriter(path))
+            //{
+            //    sw.Write(csv);
+            //}
 
         }
 
@@ -194,6 +194,7 @@ namespace Tester
     {
         public string  CodigoFilial { get; set; }
         public string Serie { get; set; }
+        public int ID { get; set; }
         public int Numero { get; set; }
         public string Nome { get; set; }
     }

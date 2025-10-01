@@ -13,6 +13,7 @@
 //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
 
 using System.Collections;
+using System.Reflection;
 
 namespace InMemoryDataStoreManager.Indexer
 {
@@ -22,6 +23,7 @@ namespace InMemoryDataStoreManager.Indexer
         void Insert(Tkey key, Tobj instance);
         void Delete(Tkey value);
         bool Search(Tkey value);
+        List<Tobj> Find(Tkey value);
         IEnumerable<Tobj> SearchRange(Tkey? minValue, Tkey? maxValue, bool includeMin = true, bool includeMax = true);
     }
 
@@ -30,7 +32,9 @@ namespace InMemoryDataStoreManager.Indexer
         void Insert(object instance);
         void Delete(object value);
         bool Search(object value);
+        IEnumerable Find(object value);
         IEnumerable SearchRange(object minValue, object maxValue, bool includeMin = true, bool includeMax = true);
+        PropertyInfo GetProperty();
     }
 
 }

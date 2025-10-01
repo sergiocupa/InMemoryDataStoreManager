@@ -32,6 +32,7 @@ namespace InMemoryDataStoreManager.Engine
 
         internal IIndexer<Tkey,T>? GetIndex<Tkey>(PropertyInfo property) => Indexer.Get<Tkey>(property);
         internal IIndexer? GetIndex(PropertyInfo property) => Indexer.Get(property);
+        internal IndexerWrapper<T> GetIndex() => Indexer;
 
         public IQueryable<T> AsQueryable() => new MemoryQueryable<T>(Provider);
 

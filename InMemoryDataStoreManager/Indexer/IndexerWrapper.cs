@@ -13,6 +13,7 @@
 //  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
 
 
+using InMemoryDataStoreManager.Engine;
 using System.Reflection;
 
 namespace InMemoryDataStoreManager.Indexer
@@ -38,7 +39,11 @@ namespace InMemoryDataStoreManager.Indexer
 
 
         public IIndexer<Tkey,T>? Get<Tkey>(PropertyInfo property) => Indexers.TryGetValue(property, out var idx) ? (IIndexer<Tkey,T>)idx : null;
-        public IIndexer? Get(PropertyInfo property) => Indexers.TryGetValue(property, out var idx) ? (IIndexer)idx : null;
+        public IIndexer? Get(PropertyInfo property)
+        {
+            Indexers.TryGetValue(property, out var idx);// ? (IIndexer)idx : null;
+            return idx;
+        }
 
 
         public void Create<TKey>(PropertyInfo property, bool is_unique) where TKey : struct, IComparable<TKey>
@@ -50,11 +55,28 @@ namespace InMemoryDataStoreManager.Indexer
             Indexers[property] = idx;
         }
 
-        private readonly Dictionary<PropertyInfo, IIndexer> Indexers;
+        internal readonly Dictionary<PropertyInfo, IIndexer> Indexers;
 
         public IndexerWrapper()
         {
             Indexers = new Dictionary<PropertyInfo, IIndexer>();
         }
+    }
+
+
+    internal class MemoryDataSourceWrapper : MemoryDataSource
+    {
+        internal static IndexBuildMetadata Get(PropertyInfo prop)
+        {
+            IndexBuildMetadata result = null;
+            if (Map.TryGetValue(prop.DeclaringType, out var rm))
+            {
+                rm.Metadata.Indexers.TryGetValue(prop, out result);
+            }
+            return result;
+        }
+
+        private MemoryDataSourceWrapper() : base() { }
+
     }
 }
